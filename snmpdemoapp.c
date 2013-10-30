@@ -2,13 +2,6 @@
 #include <net-snmp/net-snmp-includes.h>
 #include <string.h>
 
-/* change the word "define" to "undef" to try the (insecure) SNMPv1 version */
-#undef DEMO_USE_SNMP_VERSION_3
-
-#ifdef DEMO_USE_SNMP_VERSION_3
-const char *our_v3_passphrase = "The Net-SNMP Demo Password";
-#endif
-
 int main(int argc, char ** argv)
 {
     netsnmp_session session, *ss;
@@ -62,20 +55,11 @@ int main(int argc, char ** argv)
      */
     pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
     OID1_len = MAX_OID_LEN;
-    if (!snmp_parse_oid(".1.3.6.1.2.1.2.4.20.1.1.0", OID1, &OID1_len)) {
-      snmp_perror(".1.3.6.1.2.1.2.4.20.1.1.0");
+    if (!snmp_parse_oid("1.3.6.1.2.1.4.20.1.1", OID1, &OID1_len)) {
+      snmp_perror("1.3.6.1.2.1.4.20.1.1");
       SOCK_CLEANUP;
       exit(1);
     }
-#if OTHER_METHODS
-    /*
-     *  These are alternatives to the 'snmp_parse_oid' call above,
-     *    e.g. specifying the OID by name rather than numerically.
-     */
-    read_objid(".1.3.6.1.2.1.2.4.20.1.1.0", OID1, &OID1_len);
-    get_node("ip.ipAdEntAddr.0", OID1, &OID1_len);
-    read_objid("ip.ipAdEntAddr.0", OID1, &OID1_len);
-#endif
 
     snmp_add_null_var(pdu, OID1, OID1_len);
   
@@ -94,18 +78,13 @@ int main(int argc, char ** argv)
 
       for(vars = response->variables; vars; vars = vars->next_variable)
         print_variable(vars->name, vars->name_length, vars);
-
+		
       /* manipuate the information ourselves */
       for(vars = response->variables; vars; vars = vars->next_variable) {
-        if (vars->type == ASN_OCTET_STR) {
-	  char *sp = (char *)malloc(1 + vars->val_len);
+      char *sp = (char *)malloc(1 + vars->val_len);
 	  memcpy(sp, vars->val.string, vars->val_len);
 	  sp[vars->val_len] = '\0';
-          printf("value #%d is a string: %s\n", count++, sp);
-	  free(sp);
-	}
-        else
-          printf("value #%d is NOT a string! Ack!\n", count++);
+          printf("value #%d: %s\n", count++,sp);
       }
     } else {
       /*
