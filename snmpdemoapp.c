@@ -15,8 +15,8 @@ int main(int argc, char ** argv)
     netsnmp_pdu *pdu;
     netsnmp_pdu *response;
 
-    oid anOID[MAX_OID_LEN];
-    size_t anOID_len;
+    oid OID1[MAX_OID_LEN];
+    size_t OID1_len;
 
     netsnmp_variable_list *vars;
     int status;
@@ -60,10 +60,10 @@ int main(int argc, char ** argv)
      * Create the PDU for the data for our request.
      *   1) We're going to GET the system.sysDescr.0 node.
      */
-    pdu = snmp_pdu_create(SNMP_MSG_GET);
-    anOID_len = MAX_OID_LEN;
-    if (!snmp_parse_oid(".1.3.6.1.2.1.2.1.0", anOID, &anOID_len)) {
-      snmp_perror(".1.3.6.1.2.1.2.1.0");
+    pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+    OID1_len = MAX_OID_LEN;
+    if (!snmp_parse_oid(".1.3.6.1.2.1.2.4.20.1.1.0", OID1, &OID1_len)) {
+      snmp_perror(".1.3.6.1.2.1.2.4.20.1.1.0");
       SOCK_CLEANUP;
       exit(1);
     }
@@ -72,12 +72,12 @@ int main(int argc, char ** argv)
      *  These are alternatives to the 'snmp_parse_oid' call above,
      *    e.g. specifying the OID by name rather than numerically.
      */
-    read_objid(".1.3.6.1.2.1.2.1.0", anOID, &anOID_len);
-    get_node("ifNumber.0", anOID, &anOID_len);
-    read_objid("interfaces.ifNumber.0", anOID, &anOID_len);
+    read_objid(".1.3.6.1.2.1.2.4.20.1.1.0", OID1, &OID1_len);
+    get_node("ip.ipAdEntAddr.0", OID1, &OID1_len);
+    read_objid("ip.ipAdEntAddr.0", OID1, &OID1_len);
 #endif
 
-    snmp_add_null_var(pdu, anOID, anOID_len);
+    snmp_add_null_var(pdu, OID1, OID1_len);
   
     /*
      * Send the Request out.
