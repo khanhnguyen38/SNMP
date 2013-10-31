@@ -1,116 +1,66 @@
-#include <net-snmp/net-snmp-config.h>
-#include <net-snmp/net-snmp-includes.h>
-#include <string.h>
+ #include <net-snmp/net-snmp-config.h>
+    #include <net-snmp/net-snmp-includes.h>
+    #include <string.h>
 
-int main(int argc, char ** argv)
-{
-    netsnmp_session session, *ss;
-    netsnmp_pdu *pdu;
-    netsnmp_pdu *response;
+    int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
+            struct snmp_pdu *pdu;
+            struct snmp_pdu *response;
+            struct variable_list *vars;
 
-    oid OID1[MAX_OID_LEN];
-    size_t OID1_len;
+         
+            int status;
 
-    netsnmp_variable_list *vars;
-    int status;
-    int count=1;
+            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
 
-    /*
-     * Initialize the SNMP library
-     */
-    init_snmp("snmpdemoapp");
+			snmp_add_null_var(pdu, theoid, theoid_len);
+			
+            status = snmp_synch_response(sess_handle, pdu, &response);
+			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
+			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
+            for(vars = response->variables; vars; vars = vars->next_variable)
+                    print_value(vars->name, vars->name_length, vars);
+			if (response) {
+            	snmp_free_pdu(response);
+			}
+			}
+            return status;
 
-    /*
-     * Initialize a "session" that defines who we're going to talk to
-     */
-    snmp_sess_init( &session );                   /* set up defaults */
-    session.peername = strdup("localhost");
-
-    /* set up the authentication parameters for talking to the server */
-
-    /* set the SNMP version number */
-    session.version = SNMP_VERSION_1;
-
-    /* set the SNMPv1 community name used for authentication */
-    session.community = "public";
-    session.community_len = strlen(session.community);
-
-
-
-    /*
-     * Open the session
-     */
-    SOCK_STARTUP;
-    ss = snmp_open(&session);                     /* establish the session */
-
-    if (!ss) {
-      snmp_sess_perror("ack", &session);
-      SOCK_CLEANUP;
-      exit(1);
-    }
-    
-    /*
-     * Create the PDU for the data for our request.
-     *   1) We're going to GET the system.sysDescr.0 node.
-     */
-    pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
-    OID1_len = MAX_OID_LEN;
-    if (!snmp_parse_oid("1.3.6.1.2.1.4.20.1.1", OID1, &OID1_len)) {
-      snmp_perror("1.3.6.1.2.1.4.20.1.1");
-      SOCK_CLEANUP;
-      exit(1);
-    }
-
-    snmp_add_null_var(pdu, OID1, OID1_len);
-  
-    /*
-     * Send the Request out.
-     */
-    status = snmp_synch_response(ss, pdu, &response);
-
-    /*
-     * Process the response.
-     */
-    if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
-      /*
-       * SUCCESS: Print the result variables
-       */
-
-      for(vars = response->variables; vars; vars = vars->next_variable)
-        print_variable(vars->name, vars->name_length, vars);
-		
-      /* manipuate the information ourselves */
-      for(vars = response->variables; vars; vars = vars->next_variable) {
-      char *sp = (char *)malloc(1 + vars->val_len);
-	  memcpy(sp, vars->val.string, vars->val_len);
-	  sp[vars->val_len] = '\0';
-          printf("value #%d: %s\n", count++,sp);
-      }
-    } else {
-      /*
-       * FAILURE: print what went wrong!
-       */
-
-      if (status == STAT_SUCCESS)
-        fprintf(stderr, "Error in packet\nReason: %s\n",
-                snmp_errstring(response->errstat));
-      else if (status == STAT_TIMEOUT)
-        fprintf(stderr, "Timeout: No response from %s.\n",
-                session.peername);
-      else
-        snmp_sess_perror("snmpdemoapp", ss);
 
     }
 
-    /*
-     * Clean up:
-     *  1) free the response.
-     *  2) close the session.
-     */
-    if (response)
-      snmp_free_pdu(response);
-    snmp_close(ss);
+    struct snmp_session *setup_snmp_session(int version, char* community, char* host){
 
-    SOCK_CLEANUP;
-    return (0);
-} /* main() */
+                    struct snmp_session session;
+                    struct snmp_session *sess_handle;
+
+                    init_snmp("snmpapp");
+                    snmp_sess_init( &session );
+                    session.version = version;
+                    session.community = community;
+                    session.community_len = strlen(session.community);
+                    session.peername = host;
+                    sess_handle = snmp_open(&session);
+                    return sess_handle;
+
+    }
+
+    int main(int argc, char ** argv)
+    {
+            if(argv[1] == NULL){
+            printf("Please supply a hostname\n");
+            exit(1);
+    }
+       oid id_oid[MAX_OID_LEN];
+            oid serial_oid[MAX_OID_LEN];
+            size_t id_len = MAX_OID_LEN;
+            size_t serial_len = MAX_OID_LEN;
+            
+struct snmp_session   *sess_handle=setup_snmp_session(SNMP_VERSION_2c,"public",argv[1]);
+read_objid("1.3.6.1.2.1.4.20.1.1", id_oid, &id_len);
+read_objid("1.3.6.1.2.1.4.20.1.2", serial_oid, &serial_len);
+snmp_get(sess_handle, id_oid, id_len);
+snmp_get(sess_handle, serial_oid, serial_len);
+snmp_close(sess_handle);
+
+        return (0);
+}
