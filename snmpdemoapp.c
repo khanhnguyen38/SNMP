@@ -34,10 +34,14 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
 			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
 			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
             for(vars = response->variables; vars; vars = vars->next_variable) {
-                    //print_value(vars->name, vars->name_length, vars);
+                    print_variable(vars->name, vars->name_length, vars);
                     u_char *buf;
                     size_t buf_len=256, out_len=256;
                     int i =sprint_realloc_ipaddress(&buf, &buf_len, &out_len, 1, vars, NULL, NULL, NULL);
+                    //int j =sprint_realloc_value (&buf, &buf_len, &out_len, 1, vars->name, vars->name_length, vars);
+                    
+                    
+                    //printf("value is: %lu\n", (*buf+out_len));
                     
                   /*  
                     char *sp;
@@ -52,7 +56,9 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
          			//print_ip(sp);
          			//free(sp);*/
 
-        	}
+          }
+          
+      
 
 			if (response) {
             	snmp_free_pdu(response);
@@ -227,11 +233,11 @@ int main(int argc, char ** argv) {
 	read_objid("1.3.6.1.2.1.4.20.1.1", ifip, &ifip_len);
 	read_objid("1.3.6.1.2.1.4.20.1.2", if_oid, &if_len);
 
-	snmp_get(sess_handle, ifip, ifip_len);	
+	//snmp_get(sess_handle, ifip, ifip_len);	
 	//snmp_get(sess_handle, serial_oid, serial_len);
 	printf("Interfaces and IP address\n");
-	//snmp_walk(sess_handle, ifip, ifip_len);
-	//snmp_walk(sess_handle, if_oid, if_len);
+	snmp_walk(sess_handle, ifip, ifip_len);
+	snmp_walk(sess_handle, if_oid, if_len);
 	
 	
 	oid neigip [MAX_OID_LEN];
@@ -243,7 +249,7 @@ int main(int argc, char ** argv) {
 
 
 	printf("\nNeighbour:\n");
-	//snmp_walk(sess_handle, neigip, neigip_len);
+	snmp_walk(sess_handle, neigip, neigip_len);
 //	snmp_walk(sess_handle, neig_oid, neig_len);
 	
 	snmp_close(sess_handle);
