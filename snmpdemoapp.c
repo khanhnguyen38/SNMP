@@ -14,7 +14,9 @@ void print_ip(int ip)
     bytes[3] = (ip >> 24) & 0xFF;	
     printf("%d.%d.%d.%d\n", bytes[3], bytes[2], bytes[1], bytes[0]);        
 }
-
+/*
+* delay x seconds
+*/
 void delay(int seconds)
 {
     long pause;
@@ -25,7 +27,9 @@ void delay(int seconds)
     while ((now-then) < pause)
         now = clock();
 }
-
+/*
+* Get inOct
+*/
 int snmp_getInOct(struct snmp_session *sess_handle){
 			struct snmp_pdu *pdu;
             struct snmp_pdu *response;
@@ -67,7 +71,9 @@ int snmp_getInOct(struct snmp_session *sess_handle){
 	return result;
 }
 
-
+/**
+* getOutOct
+*/
 int snmp_getOutOct(struct snmp_session *sess_handle){
 			struct snmp_pdu *pdu;
             struct snmp_pdu *response;
@@ -128,9 +134,16 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
 			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
 			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
             for(vars = response->variables; vars; vars = vars->next_variable) {
-                    print_variable(vars->name, vars->name_length, vars);               
-                    //size_t buf_len=256, out_len=256;
-                    //int i =sprint_realloc_ipaddress(&buf, &buf_len, &out_len, 1, vars, NULL, NULL, NULL);
+                   // print_value(vars->name, vars->name_length, vars);               
+                    size_t buf_len=256, out_len=256;
+                    int i =sprint_realloc_by_type(&buf, &buf_len, &out_len, 1, vars, NULL, NULL, NULL);
+                    //int i=sprint_realloc_variable(&buf, &buf_len, &out_len, 1, theoid, theoid_len, vars); 
+            			printf("%d\n", i);
+            			printf("%hhu\n", buf[0]);
+            			
+                    //buf = malloc(1+buf_len);
+                    
+                    //printf("value is: %s\n",buf);
                     //int j =sprint_realloc_value (&buf, &buf_len, &out_len, 1, vars->name, vars->name_length, vars);
                     
                     
@@ -312,14 +325,14 @@ struct snmp_session *setup_snmp_session(int version, char* community, char* host
 * main
 */
 int main(int argc, char * argv[]) {
-    if(argv[1] == NULL){
-        printf("Please supply a hostname\n");
+    if(argc <4) {
+        printf("Please supply a hostname interval_time number_of_sample\n");
         exit(1);
     }
-    else if (argv[2] == NULL){
-        printf("Please supply a time interval in seconds\n");
-        exit(1);
-    }
+    
+	char *t;
+	long conv = strtol(argv[2], &t, 10);	
+	long num = strtol(argv[3], &t, 10);
 
 	oid ifip [MAX_OID_LEN];
     oid if_oid[MAX_OID_LEN];
@@ -331,7 +344,7 @@ int main(int argc, char * argv[]) {
 	read_objid("1.3.6.1.2.1.4.20.1.1", ifip, &ifip_len);
 	read_objid("1.3.6.1.2.1.4.20.1.2", if_oid, &if_len);
 
-	//snmp_get(sess_handle, ifip, ifip_len);	
+	snmp_get(sess_handle, if_oid, if_len);	
 	//snmp_get(sess_handle, serial_oid, serial_len);
 	printf("Interfaces and IP address\n");
 	snmp_walk(sess_handle, ifip, ifip_len);
@@ -348,20 +361,21 @@ int main(int argc, char * argv[]) {
 	printf("\nNeighbour:\n");
 	snmp_walk(sess_handle, neigip, neigip_len);
 	
-	
-	char *t;
-	long conv = strtol(argv[2], &t, 10);
+
+	printf("\nTraffic:\n");
+	int delta[num];
+	for (int i=1; i<=num; i++)
+	{
 	int oct1 = snmp_getInOct(sess_handle);
-	delay(conv);
-	int oct2 = snmp_getInOct(sess_handle);
-	
 	int oct3 = snmp_getOutOct(sess_handle);
 	delay(conv);
+	int oct2 = snmp_getInOct(sess_handle);
 	int oct4 = snmp_getOutOct(sess_handle);
 	
 	//calculate bandwidth utilization
-	int delta = ((oct2-oct1) + (oct4-oct3) * 8 *100) / (conv*300);
-	printf("%d\n", delta);
+	delta[i] = ((oct2-oct1) + (oct4-oct3) * 8 *100) / (conv*300);
+	printf("%d: %d\n", i, delta[i]);
+	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
 	SOCK_CLEANUP;
