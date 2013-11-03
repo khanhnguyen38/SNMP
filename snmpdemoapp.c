@@ -390,8 +390,10 @@ int main(int argc, char * argv[]) {
     	index2++;
 	}
 	printf("_____________________\n");
-	for(int k=0; k < index2; k +=4) {
-		printf("| %2s | %13s |\n", neighbor[k], neighbor[k+2]);
+	int l = index2/2;
+	for(int k=0; k < index2/4; k +=1) {
+		printf("| %2s | %13s |\n", neighbor[k], neighbor[k+l]);
+		
 	}
    	printf("_____________________\n");
 	fclose(fin2);
