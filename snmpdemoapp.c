@@ -3,7 +3,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-void delay(int miliseconds);
+void delay(int seconds);
 
 void print_ip(int ip)
 {
@@ -121,7 +121,9 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
-
+			
+			FILE *f = fopen("file.txt", "w");
+			
          	u_char *buf;
          	int j;
             int status;
@@ -134,12 +136,12 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
 			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
 			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
             for(vars = response->variables; vars; vars = vars->next_variable) {
-                   // print_value(vars->name, vars->name_length, vars);               
-                    size_t buf_len=256, out_len=256;
-                    int i =sprint_realloc_by_type(&buf, &buf_len, &out_len, 1, vars, NULL, NULL, NULL);
+                   fprint_value(f, vars->name, vars->name_length, vars);               
+                    //size_t buf_len=256, out_len=256;
+                    //int i =sprint_realloc_by_type(&buf, &buf_len, &out_len, 1, vars, NULL, NULL, NULL);
                     //int i=sprint_realloc_variable(&buf, &buf_len, &out_len, 1, theoid, theoid_len, vars); 
-            			printf("%d\n", i);
-            			printf("%hhu\n", buf[0]);
+            			//printf("%d\n", i);
+            			//printf("%s\n", buf);
             			
                     //buf = malloc(1+buf_len);
                     
@@ -188,7 +190,7 @@ int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
         int running = 1;
         int numprinted = 0;           
     	int exitval = 0;
-    
+    	FILE *f = fopen("file.txt", "a");
     	oid name[MAX_OID_LEN];
     	size_t name_length;
     	
@@ -225,7 +227,8 @@ int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
                     }
                     numprinted++;
                    
-                    print_variable(vars->name, vars->name_length, vars);
+                    fprint_value(f,vars->name, vars->name_length, vars);
+                    //print_objid(vars->name, vars->name_length);
                     if ((vars->type != SNMP_ENDOFMIBVIEW) &&
                         (vars->type != SNMP_NOSUCHOBJECT) &&
                         (vars->type != SNMP_NOSUCHINSTANCE)) {
@@ -299,6 +302,7 @@ int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
          */
         snmp_get(ss, root, rootlen);
     }
+    fclose(f);
     return exitval;
 }
 
@@ -330,9 +334,11 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
     
+    
 	char *t;
 	long conv = strtol(argv[2], &t, 10);	
 	long num = strtol(argv[3], &t, 10);
+	int r;
 
 	oid ifip [MAX_OID_LEN];
     oid if_oid[MAX_OID_LEN];
@@ -344,13 +350,35 @@ int main(int argc, char * argv[]) {
 	read_objid("1.3.6.1.2.1.4.20.1.1", ifip, &ifip_len);
 	read_objid("1.3.6.1.2.1.4.20.1.2", if_oid, &if_len);
 
-	snmp_get(sess_handle, if_oid, if_len);	
+	//snmp_get(sess_handle, ifip, ifip_len);	
 	//snmp_get(sess_handle, serial_oid, serial_len);
 	printf("Interfaces and IP address\n");
 	snmp_walk(sess_handle, ifip, ifip_len);
 	snmp_walk(sess_handle, if_oid, if_len);
 	
 	
+	FILE *fin;
+	if( ( fin = fopen( "file.txt", "r" ) ) == NULL ) {
+      fprintf( stderr, "Error opening file.\n" );
+      exit( 1 );
+   }
+	char line[80];
+	char value[80];
+	char result[10][15];
+	int index = 0;
+	while (fgets(line, 80, fin) != NULL) {
+    	sscanf(line,"%s", value);
+    	//result[index] = value;
+    	strcpy(result[index], value);
+    	index++;
+    	//printf("%s\n", value);
+	}
+	printf("_____________________\n");
+	for (int j=0; j< index/2; j += 1) {
+		printf("| %s | %s |\n", result[j], result[(index+1)/2+j]);
+	}
+	printf("_____________________\n");
+	fclose(fin);
 	oid neigip [MAX_OID_LEN];
     //oid neig_oid[MAX_OID_LEN];
     size_t neigip_len = MAX_OID_LEN;
@@ -359,12 +387,12 @@ int main(int argc, char * argv[]) {
 
 
 	printf("\nNeighbour:\n");
-	snmp_walk(sess_handle, neigip, neigip_len);
+	//snmp_walk(sess_handle, neigip, neigip_len);
 	
 
 	printf("\nTraffic:\n");
 	int delta[num];
-	for (int i=1; i<=num; i++)
+	for (int i=0; i<num; i++)
 	{
 	int oct1 = snmp_getInOct(sess_handle);
 	int oct3 = snmp_getOutOct(sess_handle);
@@ -374,7 +402,8 @@ int main(int argc, char * argv[]) {
 	
 	//calculate bandwidth utilization
 	delta[i] = ((oct2-oct1) + (oct4-oct3) * 8 *100) / (conv*300);
-	printf("%d: %d\n", i, delta[i]);
+	printf("--------\n");
+	printf("|%d | %d|\n", i*(int)conv, delta[i]);
 	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
