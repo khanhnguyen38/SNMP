@@ -3,121 +3,45 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-void delay(int seconds);
-
-void print_ip(int ip)
-{
-    unsigned char bytes[4];
-    bytes[0] = ip & 0xFF;
-    bytes[1] = (ip >> 8) & 0xFF;
-    bytes[2] = (ip >> 16) & 0xFF;
-    bytes[3] = (ip >> 24) & 0xFF;	
-    printf("%d.%d.%d.%d\n", bytes[3], bytes[2], bytes[1], bytes[0]);        
-}
-/*
-* delay x seconds
-*/
-void delay(int seconds)
-{
-    long pause;
-    clock_t now, then;
-    
-    pause =seconds*(CLOCKS_PER_SEC);
-    now = then = clock();
-    while ((now-then) < pause)
-        now = clock();
-}
-/*
-* Get inOct
-*/
-int snmp_getInOct(struct snmp_session *sess_handle){
-			struct snmp_pdu *pdu;
-            struct snmp_pdu *response;
-            struct variable_list *vars;
-
-         	u_char *buf;
-         	int j;
-            int status;
-			oid inOct [MAX_OID_LEN];
-    		size_t inOct_len = MAX_OID_LEN;
-    		int *sp;
-			read_objid("1.3.6.1.2.1.2.2.1.10", inOct, &inOct_len);
-			int result = 0;
-			
-			
-            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
-
-			snmp_add_null_var(pdu, inOct, inOct_len);
-			
-            status = snmp_synch_response(sess_handle, pdu, &response);
-			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
-			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
-            //for(vars = response->variables; vars; vars = vars->next_variable) {
-            //        print_variable(vars->name, vars->name_length, vars);   	
-            //} 
-                  /* manipuate the information ourselves */
-      		for(vars = response->variables; vars; vars = vars->next_variable) {
-      		
-      		sp = malloc(1 + vars->val_len);
-         	memcpy(sp, vars->val.integer, vars->val_len);
-         	result = *sp;
-         	free(sp);  
-      }
-            if (response) {
-            	snmp_free_pdu(response);
-			}
-			}
-
-	return result;
-}
+//void delay(int seconds);
 
 /**
-* getOutOct
+* SNMP GET
 */
-int snmp_getOutOct(struct snmp_session *sess_handle){
-			struct snmp_pdu *pdu;
+int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
+            struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
-
+			
+			FILE *f = fopen("file.txt", "w");
+			
          	u_char *buf;
          	int j;
             int status;
-			oid outOct [MAX_OID_LEN];
-    		size_t outOct_len = MAX_OID_LEN;
-    		int *sp;
-			read_objid("1.3.6.1.2.1.2.2.1.16", outOct, &outOct_len);
-			int result = 0;
-			
-			
-            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
 
-			snmp_add_null_var(pdu, outOct, outOct_len);
+            pdu = snmp_pdu_create(SNMP_MSG_GET);
+
+			snmp_add_null_var(pdu, theoid, theoid_len);
 			
             status = snmp_synch_response(sess_handle, pdu, &response);
 			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
 			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
-            //for(vars = response->variables; vars; vars = vars->next_variable) {
-            //        print_variable(vars->name, vars->name_length, vars);   	
-            //} 
-                  /* manipuate the information ourselves */
-      		for(vars = response->variables; vars; vars = vars->next_variable) {
-      		
-      		sp = malloc(1 + vars->val_len);
-         	memcpy(sp, vars->val.integer, vars->val_len);
-         	result = *sp;
-         	free(sp);  
-      }
-            if (response) {
+            for(vars = response->variables; vars; vars = vars->next_variable) {
+                   fprint_value(f, vars->name, vars->name_length, vars);               
+         	 }
+			if (response) {
             	snmp_free_pdu(response);
 			}
 			}
-
-	return result;
+			fclose(f);
+            return status;
 }
+
+
 /**
 * SNMP GETNEXT
 */
-int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
+int snmp_getnext(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
@@ -137,41 +61,13 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
 			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
             for(vars = response->variables; vars; vars = vars->next_variable) {
                    fprint_value(f, vars->name, vars->name_length, vars);               
-                    //size_t buf_len=256, out_len=256;
-                    //int i =sprint_realloc_by_type(&buf, &buf_len, &out_len, 1, vars, NULL, NULL, NULL);
-                    //int i=sprint_realloc_variable(&buf, &buf_len, &out_len, 1, theoid, theoid_len, vars); 
-            			//printf("%d\n", i);
-            			//printf("%s\n", buf);
-            			
-                    //buf = malloc(1+buf_len);
-                    
-                    //printf("value is: %s\n",buf);
-                    //int j =sprint_realloc_value (&buf, &buf_len, &out_len, 1, vars->name, vars->name_length, vars);
-                    
-                    
-                    //printf("value is: %lu\n", (*buf+out_len));
-                    
-                  /*  
-                    char *sp;
-      				sp = malloc(1 + vars->val_len);
-		       	  	memcpy(sp, vars->val.string, vars->val_len);
-		       	  	struct in_addr ip_addr;
-    				ip_addr.s_addr = sp;
-    				
-    				printf("The IP address is %s\n", inet_ntoa(ip_addr));
-         			//sp[vars->val_len] = '\0';
-         			//printf("value is: %d\n", sp);
-         			//print_ip(sp);
-         			//free(sp);*/
-
-          }
-          
-      
-
+         	 }
 			if (response) {
             	snmp_free_pdu(response);
+            	
 			}
 			}
+			fclose(f);
             return status;
 }
 
@@ -190,7 +86,7 @@ int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
         int running = 1;
         int numprinted = 0;           
     	int exitval = 0;
-    	FILE *f = fopen("file.txt", "a");
+    	FILE *f = fopen("temp.txt", "a");
     	oid name[MAX_OID_LEN];
     	size_t name_length;
     	
@@ -300,10 +196,103 @@ int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
          * pointed at an only existing instance.  Attempt a GET, just
          * for get measure. 
          */
-        snmp_get(ss, root, rootlen);
+        snmp_getnext(ss, root, rootlen);
     }
     fclose(f);
     return exitval;
+}
+
+/*
+* delay x seconds
+*/
+void delay(int seconds)
+{
+    long pause;
+    clock_t now, then;
+    
+    pause =seconds*(CLOCKS_PER_SEC);
+    now = then = clock();
+    while ((now-then) < pause)
+        now = clock();
+}
+/*
+* Get inOct
+*/
+int snmp_getInOct(struct snmp_session *sess_handle){
+			struct snmp_pdu *pdu;
+            struct snmp_pdu *response;
+            struct variable_list *vars;
+
+         	u_char *buf;
+         	int j;
+            int status;
+			oid inOct [MAX_OID_LEN];
+    		size_t inOct_len = MAX_OID_LEN;
+    		int *sp;
+			read_objid("1.3.6.1.2.1.2.2.1.10", inOct, &inOct_len);
+			int result = 0;
+			
+			
+            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+
+			snmp_add_null_var(pdu, inOct, inOct_len);
+			
+            status = snmp_synch_response(sess_handle, pdu, &response);
+			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
+			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
+      		for(vars = response->variables; vars; vars = vars->next_variable) {
+      		
+      		sp = malloc(1 + vars->val_len);
+         	memcpy(sp, vars->val.integer, vars->val_len);
+         	result = *sp;
+         	free(sp);  
+      }
+            if (response) {
+            	snmp_free_pdu(response);
+			}
+			}
+
+	return result;
+}
+
+/**
+* getOutOct
+*/
+int snmp_getOutOct(struct snmp_session *sess_handle){
+			struct snmp_pdu *pdu;
+            struct snmp_pdu *response;
+            struct variable_list *vars;
+
+         	u_char *buf;
+         	int j;
+            int status;
+			oid outOct [MAX_OID_LEN];
+    		size_t outOct_len = MAX_OID_LEN;
+    		int *sp;
+			read_objid("1.3.6.1.2.1.2.2.1.16", outOct, &outOct_len);
+			int result = 0;
+			
+			
+            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+
+			snmp_add_null_var(pdu, outOct, outOct_len);
+			
+            status = snmp_synch_response(sess_handle, pdu, &response);
+			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
+			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
+      		for(vars = response->variables; vars; vars = vars->next_variable) {
+      		
+      		sp = malloc(1 + vars->val_len);
+         	memcpy(sp, vars->val.integer, vars->val_len);
+         	result = *sp;
+         	free(sp);  
+      }
+            if (response) {
+            	snmp_free_pdu(response);
+			}
+			}
+
+	return result;
 }
 
 /*
@@ -313,7 +302,6 @@ struct snmp_session *setup_snmp_session(int version, char* community, char* host
 
                     struct snmp_session session;
                     struct snmp_session *sess_handle;
-
                     init_snmp("snmpapp");
                     snmp_sess_init( &session );
                     session.version = version;
@@ -334,9 +322,8 @@ int main(int argc, char * argv[]) {
         exit(1);
     }
     
-    
 	char *t;
-	long conv = strtol(argv[2], &t, 10);	
+	long interval = strtol(argv[2], &t, 10);	
 	long num = strtol(argv[3], &t, 10);
 	int r;
 
@@ -345,68 +332,88 @@ int main(int argc, char * argv[]) {
     size_t ifip_len = MAX_OID_LEN;
     size_t if_len = MAX_OID_LEN;
     
-            
+    //Establish session        
 	struct snmp_session   *sess_handle=setup_snmp_session(SNMP_VERSION_2c,"public",argv[1]);
+	//Read oid ifipaddress and ifnumber
 	read_objid("1.3.6.1.2.1.4.20.1.1", ifip, &ifip_len);
 	read_objid("1.3.6.1.2.1.4.20.1.2", if_oid, &if_len);
 
-	//snmp_get(sess_handle, ifip, ifip_len);	
-	//snmp_get(sess_handle, serial_oid, serial_len);
 	printf("Interfaces and IP address\n");
-	snmp_walk(sess_handle, ifip, ifip_len);
 	snmp_walk(sess_handle, if_oid, if_len);
+	snmp_walk(sess_handle, ifip, ifip_len);
 	
 	
 	FILE *fin;
-	if( ( fin = fopen( "file.txt", "r" ) ) == NULL ) {
+	if( ( fin = fopen( "temp.txt", "r" ) ) == NULL ) {
       fprintf( stderr, "Error opening file.\n" );
       exit( 1 );
-   }
+   	}
 	char line[80];
 	char value[80];
-	char result[10][15];
+	char result1[10][15];
 	int index = 0;
 	while (fgets(line, 80, fin) != NULL) {
     	sscanf(line,"%s", value);
-    	//result[index] = value;
-    	strcpy(result[index], value);
+    	strcpy(result1[index], value);
     	index++;
-    	//printf("%s\n", value);
 	}
 	printf("_____________________\n");
 	for (int j=0; j< index/2; j += 1) {
-		printf("| %s | %s |\n", result[j], result[(index+1)/2+j]);
+		printf("| %2s | %13s |\n", result1[j], result1[(index+1)/2+j]);
 	}
 	printf("_____________________\n");
 	fclose(fin);
-	oid neigip [MAX_OID_LEN];
-    //oid neig_oid[MAX_OID_LEN];
-    size_t neigip_len = MAX_OID_LEN;
-    //size_t neig_len = MAX_OID_LEN;
-	read_objid("1.3.6.1.2.1.4.22", neigip, &neigip_len);
+	remove("temp.txt");
 
-
+	//Find neighbor IP addresses
+	FILE *fin2;
 	printf("\nNeighbour:\n");
-	//snmp_walk(sess_handle, neigip, neigip_len);
-	
 
+	oid neigip [MAX_OID_LEN];
+	size_t neigip_len = MAX_OID_LEN;
+	    
+	read_objid("1.3.6.1.2.1.4.22", neigip, &neigip_len);
+	    
+	snmp_walk(sess_handle, neigip, neigip_len);
+	if( ( fin2 = fopen( "temp.txt", "r" ) ) == NULL ) {
+      	fprintf( stderr, "Error opening file.\n" );
+      	exit( 1 );
+   	}
+   	char line2[80];
+	char value2[80];
+	char neighbor[10][15];
+	int index2 = 0;
+	while (fgets(line2, 80, fin2) != NULL) {
+    	sscanf(line2,"%s", value2);
+    	strcpy(neighbor[index2], value2);
+    	//printf("%s\n", neighbor[index]);
+    	index2++;
+	}
+	printf("_____________________\n");
+	for(int k=0; k < index2; k +=4) {
+		printf("| %2s | %13s |\n", neighbor[k], neighbor[k+2]);
+	}
+   	printf("_____________________\n");
+	fclose(fin2);
+	remove("temp.txt");
 	printf("\nTraffic:\n");
 	int delta[num];
 	for (int i=0; i<num; i++)
 	{
-	int oct1 = snmp_getInOct(sess_handle);
-	int oct3 = snmp_getOutOct(sess_handle);
-	delay(conv);
-	int oct2 = snmp_getInOct(sess_handle);
-	int oct4 = snmp_getOutOct(sess_handle);
+	int inoct1 = snmp_getInOct(sess_handle);
+	int outoct1 = snmp_getOutOct(sess_handle);
+	delay(interval);
+	int inoct2 = snmp_getInOct(sess_handle);
+	int outoct2 = snmp_getOutOct(sess_handle);
 	
 	//calculate bandwidth utilization
-	delta[i] = ((oct2-oct1) + (oct4-oct3) * 8 *100) / (conv*300);
-	printf("--------\n");
-	printf("|%d | %d|\n", i*(int)conv, delta[i]);
+	delta[i] = ((inoct2-inoct1) + (outoct2-outoct1) * 8 *100) / (interval*300);
+	printf("____________\n");
+	printf("|%2d | %5d|\n", i*(int)interval, delta[i]);
 	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
 	SOCK_CLEANUP;
+	
 	return (0);
 }
