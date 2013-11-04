@@ -352,13 +352,14 @@ int main(int argc, char * argv[]) {
 	char value[80];
 	char result1[10][15];
 	int index = 0;
+    int j;
 	while (fgets(line, 80, fin) != NULL) {
     	sscanf(line,"%s", value);
     	strcpy(result1[index], value);
     	index++;
 	}
 	printf("_____________________\n");
-	for (int j=0; j< index/2; j += 1) {
+	for (j=0; j< index/2; j += 1) {
 		printf("| %2s | %13s |\n", result1[j], result1[(index+1)/2+j]);
 	}
 	printf("_____________________\n");
@@ -383,6 +384,7 @@ int main(int argc, char * argv[]) {
 	char value2[80];
 	char neighbor[10][15];
 	int index2 = 0;
+    int k;
 	while (fgets(line2, 80, fin2) != NULL) {
     	sscanf(line2,"%s", value2);
     	strcpy(neighbor[index2], value2);
@@ -391,7 +393,7 @@ int main(int argc, char * argv[]) {
 	}
 	printf("_____________________\n");
 	int l = index2/2;
-	for(int k=0; k < index2/4; k +=1) {
+	for(k=0; k < index2/4; k +=1) {
 		printf("| %2s | %13s |\n", neighbor[k], neighbor[k+l]);
 		
 	}
@@ -400,7 +402,8 @@ int main(int argc, char * argv[]) {
 	remove("temp.txt");
 	printf("\nTraffic:\n");
 	int delta[num];
-	for (int i=0; i<num; i++)
+    int i;
+	for (i=0; i<num; i++)
 	{
 	int inoct1 = snmp_getInOct(sess_handle);
 	int outoct1 = snmp_getOutOct(sess_handle);
