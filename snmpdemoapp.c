@@ -216,7 +216,7 @@ void delay(int seconds)
 /*
 * Get inOct
 */
-int snmp_getInOct(struct snmp_session *sess_handle){
+int snmp_getInOct(struct snmp_session *sess_handle, char ifnum[10]){
 			struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
@@ -227,7 +227,9 @@ int snmp_getInOct(struct snmp_session *sess_handle){
 			oid inOct [MAX_OID_LEN];
     		size_t inOct_len = MAX_OID_LEN;
     		int *sp;
-			read_objid("1.3.6.1.2.1.2.2.1.10", inOct, &inOct_len);
+    		char theoid[30] ="1.3.6.1.2.1.2.2.1.10.";
+			strcat(theoid, ifnum);
+			read_objid(theoid, inOct, &inOct_len);
 			int result = 0;
 			
 			
@@ -256,7 +258,7 @@ int snmp_getInOct(struct snmp_session *sess_handle){
 /**
 * getOutOct
 */
-int snmp_getOutOct(struct snmp_session *sess_handle){
+int snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[10]){
 			struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
@@ -267,7 +269,8 @@ int snmp_getOutOct(struct snmp_session *sess_handle){
 			oid outOct [MAX_OID_LEN];
     		size_t outOct_len = MAX_OID_LEN;
     		int *sp;
-			read_objid("1.3.6.1.2.1.2.2.1.16", outOct, &outOct_len);
+    		char theoid[30] ="1.3.6.1.2.1.2.2.1.16.";
+			read_objid(theoid, outOct, &outOct_len);
 			int result = 0;
 			
 			
@@ -348,7 +351,7 @@ int main(int argc, char * argv[]) {
    	}
 	char line[80];
 	char value[80];
-	char result1[10][15];
+	char result1[10][15];	
 	int index = 0;
     int j;
 	while (fgets(line, 80, fin) != NULL) {
@@ -356,9 +359,11 @@ int main(int argc, char * argv[]) {
     	strcpy(result1[index], value);
     	index++;
 	}
+	char ifnum[index/2][10];
 	printf("_____________________\n");
 	for (j=0; j< index/2; j += 1) {
 		printf("| %2s | %13s |\n", result1[j], result1[(index+1)/2+j]);
+		strcpy(ifnum[j], result1[j]);
 	}
 	printf("_____________________\n");
 	fclose(fin);
@@ -370,7 +375,7 @@ int main(int argc, char * argv[]) {
 
 	oid neigip [MAX_OID_LEN];
 	size_t neigip_len = MAX_OID_LEN;
-	    
+	
 	read_objid("1.3.6.1.2.1.4.22", neigip, &neigip_len);
 	    
 	snmp_walk(sess_handle, neigip, neigip_len);
@@ -400,19 +405,25 @@ int main(int argc, char * argv[]) {
 	remove("temp.txt");
 	printf("\nTraffic:\n");
 	int delta[num];
-    int i;
-	for (i=0; i<num; i++)
-	{
-	int inoct1 = snmp_getInOct(sess_handle);
-	int outoct1 = snmp_getOutOct(sess_handle);
-	delay(interval);
-	int inoct2 = snmp_getInOct(sess_handle);
-	int outoct2 = snmp_getOutOct(sess_handle);
+    int i, m;
+    for (m=0; m<index/2; m++) 
+    {
+    	printf("Interface: %s\n", ifnum[m]);
+    	printf("______________\n");
+		for (i=0; i<num; i++)
+		{
+		int inoct1 = snmp_getInOct(sess_handle, ifnum[m]);
+		int outoct1 = snmp_getOutOct(sess_handle, ifnum[m]);
+		delay(interval);
+		int inoct2 = snmp_getInOct(sess_handle, ifnum[m]);
+		int outoct2 = snmp_getOutOct(sess_handle, ifnum[m]);
 	
-	//calculate bandwidth utilization
-	delta[i] = ((inoct2-inoct1) + (outoct2-outoct1) * 8 *100) / (interval*100);
-	printf("____________\n");
-	printf("|%2d | %5d|\n", i*interval, delta[i]);
+		//calculate bandwidth utilization
+		delta[i] = ((inoct2-inoct1) + (outoct2-outoct1) * 8 *100) / (interval*100);
+		printf("____________\n");
+		printf("|%2d | %5d|\n", i*interval, delta[i]);
+		}
+		printf("______________\n");
 	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
