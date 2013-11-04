@@ -3,8 +3,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-//void delay(int seconds);
-
 /**
 * SNMP GET
 */
@@ -323,8 +321,8 @@ int main(int argc, char * argv[]) {
     }
     
 	char *t;
-	long interval = strtol(argv[2], &t, 10);	
-	long num = strtol(argv[3], &t, 10);
+	int interval = strtol(argv[2], &t, 10);	
+	int num = strtol(argv[3], &t, 10);
 	int r;
 
 	oid ifip [MAX_OID_LEN];
@@ -412,9 +410,9 @@ int main(int argc, char * argv[]) {
 	int outoct2 = snmp_getOutOct(sess_handle);
 	
 	//calculate bandwidth utilization
-	delta[i] = ((inoct2-inoct1) + (outoct2-outoct1) * 8 *100) / (interval*300);
+	delta[i] = ((inoct2-inoct1) + (outoct2-outoct1) * 8 *100) / (interval*100);
 	printf("____________\n");
-	printf("|%2d | %5d|\n", i*(int)interval, delta[i]);
+	printf("|%2d | %5d|\n", i*interval, delta[i]);
 	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
