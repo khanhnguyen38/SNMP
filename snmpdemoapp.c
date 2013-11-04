@@ -339,7 +339,6 @@ int main(int argc, char * argv[]) {
 	read_objid("1.3.6.1.2.1.4.20.1.1", ifip, &ifip_len);
 	read_objid("1.3.6.1.2.1.4.20.1.2", if_oid, &if_len);
 
-	printf("Interfaces and IP address\n");
 	snmp_walk(sess_handle, if_oid, if_len);
 	snmp_walk(sess_handle, ifip, ifip_len);
 	
@@ -360,18 +359,21 @@ int main(int argc, char * argv[]) {
     	index++;
 	}
 	char ifnum[index/2][10];
-	printf("_____________________\n");
+	printf("INTERFACES:\n");
+	printf("______________________________\n");
+	printf("| Interface |      IP         |\n");
+	printf("______________________________\n");
 	for (j=0; j< index/2; j += 1) {
-		printf("| %2s | %13s |\n", result1[j], result1[(index+1)/2+j]);
+		printf("| %9s | %15s |\n", result1[j], result1[(index+1)/2+j]);
 		strcpy(ifnum[j], result1[j]);
 	}
-	printf("_____________________\n");
+	printf("______________________________\n");
 	fclose(fin);
 	remove("temp.txt");
 
 	//Find neighbor IP addresses
 	FILE *fin2;
-	printf("\nNeighbour:\n");
+	printf("\nNEIGHBORS:\n");
 
 	oid neigip [MAX_OID_LEN];
 	size_t neigip_len = MAX_OID_LEN;
@@ -394,13 +396,15 @@ int main(int argc, char * argv[]) {
     	//printf("%s\n", neighbor[index]);
     	index2++;
 	}
-	printf("_____________________\n");
+	printf("______________________________\n");
+	printf("| Interface |      Neighbor   |\n");
+	printf("______________________________\n");
 	int l = index2/2;
 	for(k=0; k < index2/4; k +=1) {
-		printf("| %2s | %13s |\n", neighbor[k], neighbor[k+l]);
+		printf("| %9s | %15s |\n", neighbor[k], neighbor[k+l]);
 		
 	}
-   	printf("_____________________\n");
+	printf("______________________________\n");
 	fclose(fin2);
 	remove("temp.txt");
 	printf("\nTraffic:\n");
@@ -409,7 +413,7 @@ int main(int argc, char * argv[]) {
     for (m=0; m<index/2; m++) 
     {
     	printf("Interface: %s\n", ifnum[m]);
-    	printf("______________\n");
+    	printf("____________\n");
 		for (i=0; i<num; i++)
 		{
 		int inoct1 = snmp_getInOct(sess_handle, ifnum[m]);
@@ -423,7 +427,7 @@ int main(int argc, char * argv[]) {
 		printf("____________\n");
 		printf("|%2d | %5d|\n", i*interval, delta[i]);
 		}
-		printf("______________\n");
+		printf("____________\n");
 	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
