@@ -2,6 +2,7 @@
 #include <net-snmp/net-snmp-includes.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <math.h>
 
 /**
 * SNMP GET
@@ -216,7 +217,7 @@ void delay(int seconds)
 /*
 * Get inOct
 */
-int snmp_getInOct(struct snmp_session *sess_handle, char ifnum[10]){
+long snmp_getInOct(struct snmp_session *sess_handle, char ifnum[10]){
 			struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
@@ -230,10 +231,10 @@ int snmp_getInOct(struct snmp_session *sess_handle, char ifnum[10]){
     		char theoid[30] ="1.3.6.1.2.1.2.2.1.10.";
 			strcat(theoid, ifnum);
 			read_objid(theoid, inOct, &inOct_len);
-			int result = 0;
+			long result = 0;
 			
 			
-            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+            pdu = snmp_pdu_create(SNMP_MSG_GET);
 
 			snmp_add_null_var(pdu, inOct, inOct_len);
 			
@@ -258,7 +259,7 @@ int snmp_getInOct(struct snmp_session *sess_handle, char ifnum[10]){
 /**
 * getOutOct
 */
-int snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[10]){
+long snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[10]){
 			struct snmp_pdu *pdu;
             struct snmp_pdu *response;
             struct variable_list *vars;
@@ -270,11 +271,13 @@ int snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[10]){
     		size_t outOct_len = MAX_OID_LEN;
     		int *sp;
     		char theoid[30] ="1.3.6.1.2.1.2.2.1.16.";
+    		strcat(theoid, ifnum);
+    		//printf("%s\n", theoid);
 			read_objid(theoid, outOct, &outOct_len);
-			int result = 0;
+			long result = 0;
 			
 			
-            pdu = snmp_pdu_create(SNMP_MSG_GETNEXT);
+            pdu = snmp_pdu_create(SNMP_MSG_GET);
 
 			snmp_add_null_var(pdu, outOct, outOct_len);
 			
@@ -282,6 +285,7 @@ int snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[10]){
 			netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID, NETSNMP_DS_LIB_QUICK_PRINT, 1);
 			if (status == STAT_SUCCESS && response->errstat == SNMP_ERR_NOERROR) {
       		for(vars = response->variables; vars; vars = vars->next_variable) {
+      		//print_variable(vars->name, vars->name_length, vars);
       		
       		sp = malloc(1 + vars->val_len);
          	memcpy(sp, vars->val.integer, vars->val_len);
@@ -407,27 +411,74 @@ int main(int argc, char * argv[]) {
 	printf("______________________________\n");
 	fclose(fin2);
 	remove("temp.txt");
-	printf("\nTraffic:\n");
-	int delta[num];
+	printf("\nTRAFFIC:\n");
+	long intraffic[num];
+	long outtraffic[num];
     int i, m;
     for (m=0; m<index/2; m++) 
     {
     	printf("Interface: %s\n", ifnum[m]);
     	printf("____________\n");
+    	printf("In Traffic\n");
+    	printf("|Second | Traffic (Kb/s) \n");
 		for (i=0; i<num; i++)
 		{
-		int inoct1 = snmp_getInOct(sess_handle, ifnum[m]);
-		int outoct1 = snmp_getOutOct(sess_handle, ifnum[m]);
+		long inoct1 = snmp_getInOct(sess_handle, ifnum[m]);
+		
 		delay(interval);
-		int inoct2 = snmp_getInOct(sess_handle, ifnum[m]);
-		int outoct2 = snmp_getOutOct(sess_handle, ifnum[m]);
-	
-		//calculate bandwidth utilization
-		delta[i] = ((inoct2-inoct1) + (outoct2-outoct1) * 8 *100) / (interval*100);
-		printf("____________\n");
-		printf("|%2d | %5d|\n", i*interval, delta[i]);
+		long inoct2 = snmp_getInOct(sess_handle, ifnum[m]);
+		
+		//printf("%ld - %ld = %ld\n", inoct2, inoct1, inoct2-inoct1);
+			
+		//calculate in traffic 
+		if (inoct2 > inoct1) {
+			intraffic[i] = ((inoct2-inoct1) * 8 /1024) / interval;
+		}
+		//wrap around
+		else {
+			intraffic[i] = (((inoct2-inoct1) * 8 * pow(2,32) /1024))/ interval;
+		}
+		//printf("____________\n");
+		printf("|%6d | ", i*interval);
+		int n =0;
+		do { 
+			printf("*");
+			n+=2;
+		} while (n<intraffic[i]);
+		printf("(%ld)\n", intraffic[i]);
 		}
 		printf("____________\n");
+
+
+		// Out traffic
+    	printf("Out Traffic\n");
+    	printf("|Second | Traffic (Kb/s) \n");
+		for (i=0; i<num; i++)
+		{
+		long outoct1 = snmp_getOutOct(sess_handle, ifnum[m]);
+		delay(interval);
+		long outoct2 = snmp_getOutOct(sess_handle, ifnum[m]);
+			
+		//calculate in traffic 
+		if (outoct2 > outoct1) {
+			outtraffic[i] = ((outoct2-outoct1) * 8 /1024) / interval;
+		}
+		//wrap around
+		else {
+			outtraffic[i] = (((outoct2-outoct1) * 8 * pow(2,32) /1024))/ interval;
+		}
+		//printf("____________\n");
+		printf("|%6d | ", i*interval);
+		int n =0;
+		do { 
+			printf("*");
+			n+=2;
+		} while (n<outtraffic[i]);
+		printf("(%ld)\n", outtraffic[i]);
+		}
+		printf("____________\n");
+			
+	
 	}
 	//snmp_get(sess_handle, inOct, inOct_len);
 	snmp_close(sess_handle);
