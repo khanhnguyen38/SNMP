@@ -4,3 +4,5 @@ snmpdemoapp
 snmpdemoapp.o
 
 *.o
+
+snmpapp
