@@ -1,3 +1,8 @@
+/**
+*
+* SNMP Project
+* authors: Tung Dang - Khanh Nguyen
+*/
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>
 #include <arpa/inet.h>
@@ -5,7 +10,7 @@
 #include <math.h>
 
 /**
-* SNMP GET
+* SNMP GET function
 */
 int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *pdu;
@@ -38,7 +43,7 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
 
 
 /**
-* SNMP GETNEXT
+* SNMP GETNEXT function
 */
 int snmp_getnext(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *pdu;
@@ -71,7 +76,7 @@ int snmp_getnext(struct snmp_session *sess_handle, oid *theoid, size_t theoid_le
 }
 
 /**
-* SNMP WALK
+* SNMP WALK function
 * Reference from 
 * http://www.opensource.apple.com/source/net_snmp/net_snmp-10/net-snmp/apps/snmpwalk.c
 */
@@ -205,7 +210,7 @@ void delay(int seconds)
         now = clock();
 }
 /*
-* Get inOct
+* Get inOctet of an interface
 */
 long snmp_getInOct(struct snmp_session *sess_handle, char ifnum[5]){
             struct snmp_pdu *pdu;
@@ -246,7 +251,7 @@ long snmp_getInOct(struct snmp_session *sess_handle, char ifnum[5]){
 }
 
 /**
-* getOutOct
+* get OutOctet of an interface
 */
 long snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[5]){
             struct snmp_pdu *pdu;
@@ -290,7 +295,7 @@ long snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[5]){
 }
 
 /*
-* Estabish a session
+* Estabish a SNMP session
 */
 struct snmp_session *setup_snmp_session(int version, char* community, char* hostname){
     struct snmp_session session;
@@ -307,7 +312,7 @@ struct snmp_session *setup_snmp_session(int version, char* community, char* host
 }
 
 /*
-* main
+* main function
 */
 int main(int argc, char * argv[]) {
     if(argc <4) {
@@ -481,6 +486,7 @@ int main(int argc, char * argv[]) {
         printf("____________\n");      
     }
     
+    //clean up
     snmp_close(sess_handle);
     SOCK_CLEANUP;
     
