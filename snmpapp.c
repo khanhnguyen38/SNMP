@@ -1,5 +1,6 @@
 /**
 *
+* CS158B Fall 2013
 * SNMP Project
 * authors: Tung Dang - Khanh Nguyen
 */
@@ -9,8 +10,13 @@
 #include <string.h>
 #include <math.h>
 
+
 /**
 * SNMP GET function
+* @param *sess_handle session handler
+* @param *theoid oid
+* @param theoid_len length of oid
+* Prints value to a temp file
 */
 int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *pdu;
@@ -44,6 +50,10 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
 
 /**
 * SNMP GETNEXT function
+* @param *sess_handle session handler
+* @param *theoid oid
+* @param theoid_len length of oid
+* Prints value to a temp file
 */
 int snmp_getnext(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *pdu;
@@ -77,8 +87,11 @@ int snmp_getnext(struct snmp_session *sess_handle, oid *theoid, size_t theoid_le
 
 /**
 * SNMP WALK function
-* Reference from 
-* http://www.opensource.apple.com/source/net_snmp/net_snmp-10/net-snmp/apps/snmpwalk.c
+* Reference: http://www.opensource.apple.com/source/net_snmp/net_snmp-10/net-snmp/apps/snmpwalk.c
+* @param *sess_handle session handler
+* @param *root oid
+* @param rootlen length of oid
+* Prints value to a temp file
 */
 int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
         netsnmp_session session;
@@ -198,6 +211,7 @@ int snmp_walk(struct snmp_session *ss, oid *root, size_t rootlen){
 
 /*
 * delay x seconds
+* @param seconds: time interval
 */
 void delay(int seconds)
 {
@@ -211,6 +225,9 @@ void delay(int seconds)
 }
 /*
 * Get inOctet of an interface
+* @param *sess_handle session handler
+* @param ifnum[5] interface number
+* Returns inOctet number
 */
 long snmp_getInOct(struct snmp_session *sess_handle, char ifnum[5]){
             struct snmp_pdu *pdu;
@@ -252,6 +269,9 @@ long snmp_getInOct(struct snmp_session *sess_handle, char ifnum[5]){
 
 /**
 * get OutOctet of an interface
+* @param *sess_handle session handler
+* @param ifnum[5] interface number
+* Returns OutOctet number
 */
 long snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[5]){
             struct snmp_pdu *pdu;
@@ -296,6 +316,9 @@ long snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[5]){
 
 /*
 * Estabish a SNMP session
+* @param version: SNMP version
+* @param community: community name
+* @param hostname: IP address of agent
 */
 struct snmp_session *setup_snmp_session(int version, char* community, char* hostname){
     struct snmp_session session;
@@ -316,7 +339,8 @@ struct snmp_session *setup_snmp_session(int version, char* community, char* host
 */
 int main(int argc, char * argv[]) {
     if(argc <4) {
-        printf("Please supply a hostname interval_time number_of_sample\n");
+        printf("Please supply the following parameters:\n");
+        printf("hostname  interval_time  number_of_samples\n");
         exit(1);
     }
     
@@ -330,7 +354,7 @@ int main(int argc, char * argv[]) {
     size_t ifip_len = MAX_OID_LEN;
     size_t if_len = MAX_OID_LEN;
     
-    //Establish session        
+    //Establish session  
     struct snmp_session *sess_handle=setup_snmp_session(SNMP_VERSION_2c,"public",argv[1]);
     
     /*
