@@ -23,7 +23,7 @@ int snmp_get(struct snmp_session *sess_handle, oid *theoid, size_t theoid_len){
             struct snmp_pdu *response;
             struct variable_list *vars;
             
-            FILE *f = fopen("file.txt", "w");
+            FILE *f = fopen("temp.txt", "w");
             
             u_char *buf;
             int j;
@@ -60,7 +60,7 @@ int snmp_getnext(struct snmp_session *sess_handle, oid *theoid, size_t theoid_le
             struct snmp_pdu *response;
             struct variable_list *vars;
             
-            FILE *f = fopen("file.txt", "w");
+            FILE *f = fopen("temp.txt", "w");
             
             u_char *buf;
             int j;
