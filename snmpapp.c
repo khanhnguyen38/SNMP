@@ -240,6 +240,7 @@ long snmp_getInOct(struct snmp_session *sess_handle, char ifnum[5]){
             oid inOct [MAX_OID_LEN];
             size_t inOct_len = MAX_OID_LEN;
             int *sp;
+            //InOctets
             char theoid[30] ="1.3.6.1.2.1.2.2.1.10.";
             strcat(theoid, ifnum);
             read_objid(theoid, inOct, &inOct_len);
@@ -284,6 +285,7 @@ long snmp_getOutOct(struct snmp_session *sess_handle, char ifnum[5]){
             oid outOct [MAX_OID_LEN];
             size_t outOct_len = MAX_OID_LEN;
             int *sp;
+            //OutOctets
             char theoid[30] ="1.3.6.1.2.1.2.2.1.16.";
             strcat(theoid, ifnum);
             //printf("%s\n", theoid);
